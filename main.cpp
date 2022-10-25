@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdint>
+#include <string>
 #include <cassert>
 #include "cppitertools/range.hpp"
 #include "gsl/span"
@@ -45,76 +46,58 @@ string lireString(istream& fichier)
 	return texte;
 }
 
-//TODO: Fonction qui cherche un concepteur par son nom dans une ListeJeux.
-// Cette fonction renvoie le pointeur vers le concepteur si elle le trouve dans
-// un des jeux de la ListeJeux. En cas contraire, elle renvoie un pointeur nul.
 shared_ptr<Concepteur> trouverConcepteur(const Liste<Jeu>& listeJeux, string nom)
 {
 	for (int i = 0; i < listeJeux.obtenirNElements(); i++) {
-		// Normalement on voudrait retourner un pointeur const, mais cela nous
-		// empêcherait d'affecter le pointeur retourné lors de l'appel de cette
-		// fonction.
+		
 		for (int j = 0; j < listeJeux[i]->concepteurs.obtenirNElements(); j++) {
 			
-			return listeJeux[i]->trouverConcepteur(nom);
+			if (listeJeux[i]->concepteurs[j]->nom == nom)
+				return listeJeux[i]->concepteurs[j];
 		}
 	}
 	
+	return nullptr;
 }
 
 
 shared_ptr<Concepteur> lireConcepteur(istream& fichier, Liste<Jeu>& listeJeux)
 {
-	Concepteur concepteur = {}; // On initialise une structure vide de type Concepteur.
+	Concepteur concepteur = {}; 
 	concepteur.nom = lireString(fichier);
 	concepteur.anneeNaissance = int(lireUintTailleVariable(fichier));
 	concepteur.pays = lireString(fichier);
-	// Rendu ici, les champs précédents de la structure concepteur sont remplis
-	// avec la bonne information.
-
-	//TODO: Ajouter en mémoire le concepteur lu. Il faut revoyer le pointeur créé.
-	// Attention, valider si le concepteur existe déjà avant de le créer, sinon
-	// on va avoir des doublons car plusieurs jeux ont des concepteurs en commun
-	// dans le fichier binaire. Pour ce faire, cette fonction aura besoin de
-	// la liste de jeux principale en paramètre.
-	// Afficher un message lorsque l'allocation du concepteur est réussie.
+	
 	shared_ptr<Concepteur> concepteurExistant = trouverConcepteur(listeJeux, concepteur.nom);
 	if (concepteurExistant != nullptr)
 		return concepteurExistant;
 
-	//cout << concepteur.nom << endl;  //TODO: Enlever cet affichage temporaire servant à voir que le code fourni lit bien les jeux.
+	
 	cout << "\033[92m" << "Allocation en mémoire du concepteur " << concepteur.nom
 				<< "\033[0m" << endl;
-	return make_shared<Concepteur>(concepteur); //TODO: Retourner le pointeur vers le concepteur crée.
+	return make_shared<Concepteur>(concepteur); 
 }
 
 
 
 shared_ptr<Jeu> lireJeu(istream& fichier, Liste<Jeu>& listeJeux)
 {
-	Jeu jeu = {}; // On initialise une structure vide de type Jeu
+	Jeu jeu = {};
 	jeu.titre = lireString(fichier);
 	jeu.anneeSortie = int(lireUintTailleVariable(fichier));
 	jeu.developpeur = lireString(fichier);
-	jeu.concepteurs.ajusterNElements((size_t) lireUintTailleVariable(fichier));
-	// Rendu ici, les champs précédents de la structure jeu sont remplis avec la
-	// bonne information.
-
-	//TODO: Ajouter en mémoire le jeu lu. Il faut revoyer le pointeur créé.
-	// Attention, il faut aussi créer un tableau dynamique pour les concepteurs
-	// que contient un jeu. Servez-vous de votre fonction d'ajout de jeu car la
-	// liste de jeux participé est une ListeJeu. Afficher un message lorsque
-	// l'allocation du jeu est réussie.
-	auto ptrJeu =  make_shared<Jeu>(jeu);  // Ou allouer directement au début plutôt qu'en faire une copie ici.
+	size_t nbConcepteurs = lireUintTailleVariable(fichier);
+	
+	shared_ptr ptrJeu = make_shared<Jeu>(jeu); 
 	cout << "\033[96m" << "Allocation en mémoire du jeu " << jeu.titre
 			  << "\033[0m" << endl;
-	// cout << jeu.titre << endl;  //TODO: Enlever cet affichage temporaire servant à voir que le code fourni lit bien les jeux.
 	
-	for (int i = 0; i < jeu.concepteurs.obtenirNElements(); i++) {
-		
-		jeu.concepteurs.ajouterElement(lireConcepteur(fichier, listeJeux)); //TODO: Ajouter le jeu à la liste des jeux auquel a participé le concepteur.
+	
+	for (int i = 0; i < nbConcepteurs; i++) {
+
+		ptrJeu->concepteurs.ajouterElement(lireConcepteur(fichier, listeJeux));
 	}
-	return ptrJeu; //TODO: Retourner le pointeur vers le nouveau jeu.
+	return ptrJeu; 
 }
 
 Liste<Jeu> creerListeJeux(const string& nomFichier)
@@ -125,38 +108,12 @@ Liste<Jeu> creerListeJeux(const string& nomFichier)
 	Liste<Jeu> listeJeux;
 	for([[maybe_unused]] size_t n : iter::range(nElements))
 	{
-		listeJeux.ajouterElement(lireJeu(fichier, listeJeux)); //TODO: Ajouter le jeu à la ListeJeux.
+		listeJeux.ajouterElement(lireJeu(fichier, listeJeux)); 
 	}
 
-	return listeJeux; //TODO: Renvoyer la ListeJeux.
+	return listeJeux; 
 }
 
-
-void afficherConcepteur(const Concepteur& d)
-{
-	cout << "\t" << d.nom << ", " << d.anneeNaissance << ", " << d.pays
-			  << endl;
-}
-
-
-
-//TODO: Fonction pour afficher les infos d'un jeu ainsi que ses concepteurs.
-// Servez-vous de la fonction afficherConcepteur ci-dessus.
-void afficherJeu(const Jeu& j)
-{
-	cout << "Titre : " << "\033[94m" << j.titre << "\033[0m" << endl;
-	cout << "Parution : " << "\033[94m" << j.anneeSortie << "\033[0m"
-			  << endl;
-	cout << "Développeur :  " << "\033[94m" << j.developpeur << "\033[0m"
-			  << endl;
-	cout << "Concepteurs du jeu :" << "\033[94m" << endl;
-	
-
-
-
-
-	cout << "\033[0m";
-}
 
 static const string ligneSeparation = "\n\033[35m════════════════════════════════════════\033[0m\n";
 
@@ -164,6 +121,8 @@ ostream& operator<< (ostream& stream, const Liste<Concepteur>& concepteurs)
 {
 	for (int i = 0; i < concepteurs.obtenirNElements(); i++)
 		stream << "\t" << concepteurs[i]->nom << ", " << concepteurs[i]->anneeNaissance << ", " << concepteurs[i]->pays << "\n";
+	
+	return stream;
 }
 
 ostream& operator<< (ostream& stream, const Liste<Jeu>& jeux)
@@ -172,12 +131,10 @@ ostream& operator<< (ostream& stream, const Liste<Jeu>& jeux)
 	{
 		stream << ligneSeparation;
 
-		stream << "Titre : " << jeux[i]->titre << "\n " << "Parution : " << jeux[i]->anneeSortie << "\n " << "Developpeur : " << jeux[i]->developpeur << "\n";
+		stream << "Titre : " << jeux[i]->titre << "\n" << "Parution : " << jeux[i]->anneeSortie << "\n" << "Developpeur : " << jeux[i]->developpeur << "\n";
 		stream << "Concepteurs du jeu : \n";
 
 		stream << jeux[i]->concepteurs;
-
-		stream << ligneSeparation;
 	}
 
 	return stream;
@@ -197,8 +154,46 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 	Liste<Jeu> lj = creerListeJeux("jeux.bin"); //TODO: Appeler correctement votre fonction de création de la liste de jeux.
 
+	//Nombre de jeux et capacite après création
+	cout << ligneSeparation;
+	cout << "Nombre de jeux : " << lj.obtenirNElements() << endl;
+	cout << "Capacite : " << lj.obtenirCapacite() << endl;
+	cout << ligneSeparation << endl;
+	
+	//Test operateur []
+	cout << "Titre du deuxieme jeu de lj : " << lj[2]->titre << endl;
+	cout << "Nom du premier concepteur du jeu ci-dessus : " << lj[2]->concepteurs[1]->nom << endl;
+	cout << ligneSeparation << endl;
 
-	cout << lj[2]->titre << endl;
-	cout << lj[2]->concepteurs[1] << endl;
+	//Test fonction de recherche par critere
+	shared_ptr premierConcepteur = lj[0]->trouverConcepteur([](shared_ptr<Concepteur> element) {return "Yoshinori Kitase" == element->nom; });
+	shared_ptr deuxiemeConcepteur = lj[1]->trouverConcepteur([](shared_ptr<Concepteur> element) {return "Yoshinori Kitase" == element->nom; });
+	
+	cout << "Adresse du premier pointeur : " << premierConcepteur.get() << endl;
+	cout << "Adresse du deuxieme pointeur : " << deuxiemeConcepteur.get() << '\n' << endl;
+	cout << "Date de naissance : " << premierConcepteur->anneeNaissance << endl;
+	cout << ligneSeparation << endl;
+
+	//Test operateur <<
+	cout << lj << ligneSeparation << endl;
+	ofstream("sortie.txt") << lj;
+
+	//Test copie
+	Jeu copieJeu = *lj[2];
+	copieJeu.concepteurs[1] = lj[2]->concepteurs[0];
+
+	cout << "Jeu à l'indice 2 : " << '\n' << endl;
+	cout << "Titre : " << lj[2]->titre << "\n" << "Parution : " << lj[2]->anneeSortie << "\n" << "Developpeur : " << lj[2]->developpeur << endl;
+	cout << "Concepteurs du jeu : " << endl;
+	cout << lj[2]->concepteurs << endl;
+
+	cout << "Copie du jeu : " << '\n' << endl;
+	cout << "Titre : " << copieJeu.titre << "\n" << "Parution : " << copieJeu.anneeSortie << "\n" << "Developpeur : " << copieJeu.developpeur << endl;
+	cout << "Concepteurs du jeu : " << endl;
+	cout << copieJeu.concepteurs << endl;
+
+	cout << "Adresse du premier concepteur : " << lj[2]->concepteurs[0].get() << endl;
+	cout << "Adresse du premier concepteur dans la copie : " << copieJeu.concepteurs[0].get() << endl;
+
 
 }

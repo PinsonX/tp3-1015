@@ -11,8 +11,9 @@ struct Jeu
 	std::string developpeur;
 	Liste<Concepteur> concepteurs;
 
-	shared_ptr<Concepteur> trouverConcepteur(const string concepteur)
+	template <typename PredicatUnaire>
+	shared_ptr<Concepteur> trouverConcepteur(const PredicatUnaire& critere)
 	{
-		return concepteurs.trouverCritere([concepteur](shared_ptr<Concepteur> element) {return concepteur == element->nom; });
+		return concepteurs.trouverCritere(critere);
 	}
 };
